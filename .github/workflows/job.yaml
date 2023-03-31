@@ -1,0 +1,27 @@
+name: job
+on: push
+
+jobs:
+    packer: 
+      runs-on: ubuntu-latest
+      permissions:
+        contents: 'read'
+        id-token: 'write'
+
+      steps:
+       - uses: 'actions/checkout@v3'
+
+    # Configure Workload Identity Federation and generate an access token.
+       - id: 'auth'
+         name: 'Authenticate to Google Cloud'
+         uses: 'google-github-actions/auth@v1'
+         with:
+            token_format: 'access_token' # <--
+            workload_identity_provider: 'projects/487413294823/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+            service_account: 'dev-service-account@burner-racgupta1.iam.gserviceaccount.com'
+            access_token_lifetime: '300s' # optional, default: '3600s' (1 hour)
+
+       - id: 'access-secret'
+         run: |-
+            curl https://secretmanager.googleapis.com/v1/projects/burner-racgupta1/secrets/dev_secret/versions/1:access \
+              --header "Authorization: Bearer ${{ steps.auth.outputs.access_token }}"
